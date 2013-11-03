@@ -4,17 +4,17 @@
  * Copyright (C) 2011, 2012, 2013 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
- * This file is a part of Gnuk, a GnuPG USB Token implementation.
+ * This file is a part of Fraucheky, GNU GPL container
  *
- * Gnuk is free software: you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Fraucheky is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published
+ * by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
  *
- * Gnuk is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
- * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
- * License for more details.
+ * Fraucheky is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
@@ -26,17 +26,8 @@
 #include <chopstx.h>
 
 #include "config.h"
-#include "gnuk.h"
 #include "usb_lld.h"
 #include "usb-msc.h"
-
-extern uint8_t __process5_stack_base__, __process5_stack_size__;
-const uint32_t __stackaddr_msc = (uint32_t)&__process5_stack_base__;
-const size_t __stacksize_msc = (size_t)&__process5_stack_size__;
-#define PRIO_MSC 3
-
-static chopstx_mutex_t a_pinpad_mutex;
-static chopstx_cond_t a_pinpad_cond;
 
 static chopstx_mutex_t a_msc_mutex;
 static chopstx_cond_t a_msc_cond;
@@ -44,9 +35,6 @@ static chopstx_cond_t a_msc_cond;
 #define RDY_OK    0
 #define RDY_RESET 1
 static uint8_t msg;
-
-chopstx_mutex_t *pinpad_mutex = &a_pinpad_mutex;
-chopstx_cond_t *pinpad_cond = &a_pinpad_cond;
 
 static chopstx_mutex_t *msc_mutex = &a_msc_mutex;
 static chopstx_cond_t *msc_cond = &a_msc_cond;
@@ -537,9 +525,6 @@ msc_main (void *arg)
   chopstx_mutex_init (msc_mutex);
   chopstx_cond_init (msc_cond);
 
-  chopstx_mutex_init (pinpad_mutex);
-  chopstx_cond_init (pinpad_cond);
-
   /* Initially, it starts with no media */
   msc_media_insert_change (0);
   while (1)
@@ -548,6 +533,18 @@ msc_main (void *arg)
   return NULL;
 }
 
+
+#ifndef PROCESS_STACK_BASE
+extern uint8_t __process5_stack_base__, __process5_stack_size__;
+#define PROCESS_STACK_BASE __process5_stack_base__
+#define PROCESS_STACK_SIZE __process5_stack_size__
+#endif
+const uint32_t __stackaddr_msc = (uint32_t)&PROCESS_MSC_STACK_BASE;
+const size_t __stacksize_msc = (size_t)&PROCESS_MSC_STACK_SIZE;
+
+#ifndef PRIO_MSC
+#define PRIO_MSC 3
+#endif
 
 void
 msc_init (void)
