@@ -27,7 +27,7 @@
 
 #include "config.h"
 #include "usb_lld.h"
-#include "usb-msc.h"
+#include "msc.h"
 
 static chopstx_mutex_t a_msc_mutex;
 static chopstx_cond_t a_msc_cond;
