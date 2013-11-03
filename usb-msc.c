@@ -4,7 +4,8 @@
  * Copyright (C) 2011, 2012, 2013 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
- * This file is a part of Fraucheky, GNU GPL container
+ * This file is a part of Fraucheky, making sure to have GNU GPL on a
+ * USB thumb drive
  *
  * Fraucheky is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -29,15 +30,20 @@
 #include "usb_lld.h"
 #include "msc.h"
 
-static chopstx_mutex_t a_msc_mutex;
-static chopstx_cond_t a_msc_cond;
+extern int msc_scsi_write (uint32_t lba, const uint8_t *buf, size_t size);
+extern int msc_scsi_read (uint32_t lba, const uint8_t **sector_p);
+extern void msc_scsi_stop (uint8_t code);
+
+#define MSC_SECTOR_SIZE 512
+
+static uint32_t number_of_blocks;
 
 #define RDY_OK    0
 #define RDY_RESET 1
 static uint8_t msg;
 
-static chopstx_mutex_t *msc_mutex = &a_msc_mutex;
-static chopstx_cond_t *msc_cond = &a_msc_cond;
+static chopstx_mutex_t msc_mutex;
+static chopstx_cond_t msc_cond;
 
 
 struct usb_endp_in {
@@ -77,7 +83,7 @@ EP6_IN_Callback (void)
 {
   size_t n;
 
-  chopstx_mutex_lock (msc_mutex);
+  chopstx_mutex_lock (&msc_mutex);
 
   n = (size_t)usb_lld_tx_data_len (ENDP6);
   ep6_in.txbuf += n;
@@ -99,13 +105,13 @@ EP6_IN_Callback (void)
       case MSC_SENDING_CSW:
       case MSC_DATA_IN:
 	msg = RDY_OK;
-	chopstx_cond_signal (msc_cond);
+	chopstx_cond_signal (&msc_cond);
 	break;
       default:
 	break;
       }
 
-  chopstx_mutex_unlock (msc_mutex);
+  chopstx_mutex_unlock (&msc_mutex);
 }
 
 
@@ -124,7 +130,7 @@ EP6_OUT_Callback (void)
   size_t n;
   int err = 0;
 
-  chopstx_mutex_lock (msc_mutex);
+  chopstx_mutex_lock (&msc_mutex);
 
   n =  (size_t)usb_lld_rx_data_len (ENDP6);
   if (n > ep6_out.rxsize)
@@ -148,13 +154,13 @@ EP6_OUT_Callback (void)
       case MSC_IDLE:
       case MSC_DATA_OUT:
 	msg = err ? RDY_RESET : RDY_OK;
-	chopstx_cond_signal (msc_cond);
+	chopstx_cond_signal (&msc_cond);
 	break;
       default:
 	break;
       }
 
-  chopstx_mutex_unlock (msc_mutex);
+  chopstx_mutex_unlock (&msc_mutex);
 }
 
 static const uint8_t scsi_inquiry_data_00[] = { 0, 0, 0, 0, 0 };
@@ -171,8 +177,8 @@ static const uint8_t scsi_inquiry_data[] = {
 				/* Vendor Identification */
   'F', 'S', 'I', 'J', ' ', ' ', ' ', ' ',
 				/* Product Identification */
-  'V', 'i', 'r', 't', 'u', 'a', 'l', ' ',
-  'D', 'i', 's', 'k', ' ', ' ', ' ', ' ',
+  'F', 'r', 'a', 'u', 'c', 'h', 'e', 'k',
+  'y', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
 				/* Product Revision Level */
   '1', '.', '0', ' '
 };
@@ -211,14 +217,16 @@ static uint8_t buf[512];
 static uint8_t contingent_allegiance;
 static uint8_t keep_contingent_allegiance;
 
-uint8_t media_available;
+#define MEDIA_AVAILABLE() (number_of_blocks != 0);
 
 void
-msc_media_insert_change (int available)
+msc_media_insert_change (uint32_t nblocks)
 {
+  chopstx_mutex_lock (&msc_mutex);
+
+  number_of_blocks = nblocks;
   contingent_allegiance = 1;
-  media_available = available;
-  if (available)
+  if (MEDIA_AVAILABLE ())
     {
       set_scsi_sense_data (0x06, 0x28); /* UNIT_ATTENTION */
       keep_contingent_allegiance = 0;
@@ -228,15 +236,17 @@ msc_media_insert_change (int available)
       set_scsi_sense_data (0x02, 0x3a); /* NOT_READY */
       keep_contingent_allegiance = 1;
     }
+
+  chopstx_mutex_unlock (&msc_mutex);
 }
 
 
 static uint8_t scsi_read_format_capacities (uint32_t *nblocks,
 					    uint32_t *secsize)
 {
-  *nblocks = 68;
-  *secsize = 512;
-  if (media_available)
+  *nblocks = number_of_blocks;
+  *secsize = MSC_SECTOR_SIZE;
+  if (MEDIA_AVAILABLE ())
     return 2; /* Formatted Media.*/
   else
     return 3; /* No Media.*/
@@ -252,7 +262,7 @@ static int msc_recv_data (void)
 {
   msc_state = MSC_DATA_OUT;
   usb_start_receive (buf, 512);
-  chopstx_cond_wait (msc_cond, msc_mutex);
+  chopstx_cond_wait (&msc_cond, &msc_mutex);
   return 0;
 }
 
@@ -261,7 +271,7 @@ static void msc_send_data (const uint8_t *p, size_t n)
 {
   msc_state = MSC_DATA_IN;
   usb_start_transmit (p, n);
-  chopstx_cond_wait (msc_cond, msc_mutex);
+  chopstx_cond_wait (&msc_cond, &msc_mutex);
   CSW.dCSWDataResidue -= (uint32_t)n;
 }
 
@@ -282,7 +292,7 @@ static void msc_send_result (const uint8_t *p, size_t n)
 
   msc_state = MSC_SENDING_CSW;
   usb_start_transmit ((uint8_t *)&CSW, sizeof CSW);
-  chopstx_cond_wait (msc_cond, msc_mutex);
+  chopstx_cond_wait (&msc_cond, &msc_mutex);
 }
 
 
@@ -294,10 +304,10 @@ msc_handle_command (void)
   uint32_t lba;
   int r;
 
-  chopstx_mutex_lock (msc_mutex);
+  chopstx_mutex_lock (&msc_mutex);
   msc_state = MSC_IDLE;
   usb_start_receive ((uint8_t *)&CBW, sizeof CBW);
-  chopstx_cond_wait (msc_cond, msc_mutex);
+  chopstx_cond_wait (&msc_cond, &msc_mutex);
 
   if (msg != RDY_OK)
     {
@@ -440,7 +450,12 @@ msc_handle_command (void)
 		  break;
 		}
 
-	      if ((r = msc_scsi_read (lba, &p)) == 0)
+	      if (!MEDIA_AVAILABLE ())
+		r = SCSI_ERROR_NOT_READY;
+	      else
+		r = msc_scsi_read (lba, &p);
+
+	      if (r == 0)
 		{
 		  msc_send_data (p, 512);
 		  if (++CBW.CBWCB[5] == 0)
@@ -486,7 +501,12 @@ msc_handle_command (void)
 		/* ignore erroneous packet, ang go next.  */
 		continue;
 
-	      if ((r = msc_scsi_write (lba, buf, 512)) == 0)
+	      if (!MEDIA_AVAILABLE ())
+		r = SCSI_ERROR_NOT_READY;
+	      else
+		r = msc_scsi_write (lba, buf, 512);
+
+	      if (r == 0)
 		{
 		  if (++CBW.CBWCB[5] == 0)
 		    if (++CBW.CBWCB[4] == 0)
@@ -513,7 +533,7 @@ msc_handle_command (void)
     }
 
  done:
-  chopstx_mutex_unlock (msc_mutex);
+  chopstx_mutex_unlock (&msc_mutex);
 }
 
 
@@ -522,8 +542,8 @@ msc_main (void *arg)
 {
   (void)arg;
 
-  chopstx_mutex_init (msc_mutex);
-  chopstx_cond_init (msc_cond);
+  chopstx_mutex_init (&msc_mutex);
+  chopstx_cond_init (&msc_cond);
 
   /* Initially, it starts with no media */
   msc_media_insert_change (0);
