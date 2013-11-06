@@ -217,7 +217,7 @@ static uint8_t buf[512];
 static uint8_t contingent_allegiance;
 static uint8_t keep_contingent_allegiance;
 
-#define MEDIA_AVAILABLE() (number_of_blocks != 0);
+#define MEDIA_AVAILABLE() (number_of_blocks != 0)
 
 void
 msc_media_insert_change (uint32_t nblocks)
@@ -465,6 +465,7 @@ msc_handle_command (void)
 		  if (CBW.CBWCB[8]-- == 0)
 		    CBW.CBWCB[7]--;
 		  CSW.dCSWDataResidue += 512;
+		  lba++;
 		}
 	      else
 		{
@@ -515,6 +516,7 @@ msc_handle_command (void)
 		  if (CBW.CBWCB[8]-- == 0)
 		    CBW.CBWCB[7]--;
 		  CSW.dCSWDataResidue -= 512;
+		  lba++;
 		}
 	      else
 		{
@@ -537,6 +539,30 @@ msc_handle_command (void)
 }
 
 
+uint8_t fraucheky_main_done;
+
+extern const uint16_t rom_var;
+const uint16_t *fraucheky_enabled_var = &rom_var;
+
+int
+fraucheky_enabled (void)
+{
+  return fraucheky_enabled_var[0] != 0;
+}
+
+void
+fraucheky_main (void)
+{
+  chopstx_mutex_init (&msc_mutex);
+  chopstx_cond_init (&msc_cond);
+
+  msc_media_insert_change (128);
+  while (!fraucheky_main_done)
+    msc_handle_command ();
+}
+
+
+#if 0
 static void *
 msc_main (void *arg)
 {
@@ -554,10 +580,10 @@ msc_main (void *arg)
 }
 
 
-#ifndef PROCESS_STACK_BASE
+#ifndef PROCESS_MSC_STACK_BASE
 extern uint8_t __process5_stack_base__, __process5_stack_size__;
-#define PROCESS_STACK_BASE __process5_stack_base__
-#define PROCESS_STACK_SIZE __process5_stack_size__
+#define PROCESS_MSC_STACK_BASE __process5_stack_base__
+#define PROCESS_MSC_STACK_SIZE __process5_stack_size__
 #endif
 const uint32_t __stackaddr_msc = (uint32_t)&PROCESS_MSC_STACK_BASE;
 const size_t __stacksize_msc = (size_t)&PROCESS_MSC_STACK_SIZE;
@@ -571,3 +597,4 @@ msc_init (void)
 {
   chopstx_create (PRIO_MSC, __stackaddr_msc, __stacksize_msc, msc_main, NULL);
 }
+#endif

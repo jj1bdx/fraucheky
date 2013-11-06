@@ -1,0 +1,14 @@
+Fraucheky - the GPL container for USB devices
+
+							    Version 0.0
+							     2013-11-06
+						           Niibe Yutaka
+
+What's this?
+============
+
+This is a set of routines to deliver GPL with USB device implementation.
+It is licensed under GPLv3.
+
+
+Please see NeuG for a concrete example.
