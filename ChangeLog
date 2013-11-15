@@ -1,3 +1,8 @@
+2013-11-15  Niibe Yutaka  <gniibe@fsij.org>
+
+	* fraucheky.c (fraucheky_get_descriptor): Handle string descriptor
+	request correctly.
+
 2013-11-06  Niibe Yutaka  <gniibe@fsij.org>
 
 	* Version 0.0.

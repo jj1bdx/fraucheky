@@ -161,20 +161,24 @@ int
 fraucheky_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
 			  uint16_t index)
 {
-  if (rcp == DEVICE_RECIPIENT && index == 0)
+  if (rcp == DEVICE_RECIPIENT)
     {
-      if (desc_type == DEVICE_DESCRIPTOR)
+      if (desc_type == DEVICE_DESCRIPTOR && index == 0)
 	{
 	  usb_lld_set_data_to_send (device_desc, sizeof (device_desc));
 	  return USB_SUCCESS;
 	}
-      else if (desc_type == CONFIG_DESCRIPTOR)
+      else if (desc_type == CONFIG_DESCRIPTOR && index == 0)
 	{
 	  usb_lld_set_data_to_send (config_desc, sizeof (config_desc));
 	  return USB_SUCCESS;
 	}
       else if (desc_type == STRING_DESCRIPTOR)
 	{
+	  if (!((index == 0 && desc_index == 0) || index == 0x0409))
+	    /* We only provide string in English.  */
+	    return USB_UNSUPPORT;
+
 	  if (desc_index < sizeof (string_descriptors) / sizeof (struct desc))
 	    {
 	      usb_lld_set_data_to_send (string_descriptors[desc_index].desc,
