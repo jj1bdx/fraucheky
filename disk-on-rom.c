@@ -158,7 +158,7 @@ static const uint8_t d0_rootdir_sector[] = {
 
   'C', 'O', 'P',  'Y',  'I',  'N',  'G',  ' ',  ' ',  ' ',  ' ', 
   /* "COPYING     " */
-  0x01, /* Read only, XXX: archive bit??? 20 */
+  0x21,				/* Archive, Read only */
   0x00,
   0x00, 0x0b, 0x64, 0x65, 0x43, /* Create Time */
   0x63, 0x43, /* last access */
@@ -169,7 +169,7 @@ static const uint8_t d0_rootdir_sector[] = {
 
   'R', 'E', 'A',  'D',  'M',  'E',  ' ',  ' ',  ' ',  ' ',  ' ', 
   /* "README      " */
-  0x01, /* Read only, XXX: archive bit??? 20 */
+  0x21,				/* Archive, Read only */
   0x00,
   0x64, 0x10, 0x64, 0x65, 0x43, /* Create Time */
   0x63, 0x43, /* last access */
@@ -179,7 +179,7 @@ static const uint8_t d0_rootdir_sector[] = {
   0xc4, 0x2e, 0x00, 0x00,  /* file size */
 
   'I', 'N', 'D', 'E', 'X', ' ', ' ', ' ', 'H', 'T', 'M', /* INDEX.HTM */
-  0x01, /* Read only, XXX: archive bit??? 20 */
+  0x21,			        /* Archive, Read only */
   0x00,
   0x64, 0x10, 0x64, 0x65, 0x43,  /* Create Time */
   0x63, 0x43, /* last access */
