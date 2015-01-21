@@ -1,3 +1,18 @@
+2015-01-21  Niibe Yutaka  <gniibe@fsij.org>
+
+	* README: Version 0.1.
+
+	* build.mk (distclean): Add disk-on-rom.h.
+
+	* configure (file_info, cluster_map): New functions.
+
+	* disk-on-rom.c: Include disk-on-rom.h, which is generated.
+	(d0_fat0_sector): Use CLUSTER_MAP macro.
+	(d0_rootdir_sector): Use macros of COPYING_ATTRIBUTES,
+	README_ATTRIBUTES, INDEX_ATTRIBUTES.
+	Use macros of COPYING__FILE_SIZE,
+	README__FILE_SIZE, INDEX__FILE_SIZE.
+
 2013-11-06  Niibe Yutaka  <gniibe@fsij.org>
 
 	* Version 0.0.

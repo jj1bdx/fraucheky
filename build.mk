@@ -14,4 +14,4 @@ $(BUILDDIR)/INDEX.o: INDEX
 
 distclean::
 	-rm -f README INDEX \
-	       fraucheky-vid-pid-ver.c.inc fraucheky-usb-strings.c.inc 
+	       fraucheky-vid-pid-ver.c.inc fraucheky-usb-strings.c.inc disk-on-rom.h

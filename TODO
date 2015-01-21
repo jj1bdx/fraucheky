@@ -9,21 +9,21 @@
   for that.
 
 
-* Many things are hard wired
-
-At configure time, following macro and constants in disk-on-rom.c
-should be generated.
-
-    GPL_SECTOR_SIZE
-    README_SECTOR_SIZE
-    INDEX_SECTOR_SIZE
-
-    d0_fat0_sector
-    d0_rootdir_sector
-
-
 * sharing usb-msc.c implementation for other purpose
   (like pin-dnd.c in Gnuk)
 
 
 * Device on external chip
+
+
+* [DONE] Many things are hard wired
+
+At configure time, following macro and constants in disk-on-rom.c
+should be generated.
+
+    COPYING_BLOCKS
+    README_BLOCKS
+    INDEX_BLOCKS
+
+    d0_fat0_sector
+    d0_rootdir_sector
