@@ -1,7 +1,7 @@
 /*
  * disk-on-rom.c -- FAT storage (GPL, README, and INDEX.HTM) on ROM
  *
- * Copyright (C) 2013 Free Software Initiative of Japan
+ * Copyright (C) 2013, 2015 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Fraucheky, GNU GPL in a USB thumb drive
@@ -25,6 +25,7 @@
 #include <string.h>
 #include <chopstx.h>
 
+#include "disk-on-rom.h"
 #include "msc.h"
 #include "sys.h"
 
@@ -108,40 +109,20 @@ static const uint8_t d0_0_sector[] = {
 };
 
 
-/* Sector no for Root:      3 */
-#define DROPHERE_SECTOR     4
-#define GPL_SECTOR_START    5
-#define GPL_SECTOR_SIZE     69
-#define GPL_SECTOR_END      (GPL_SECTOR_START+GPL_SECTOR_SIZE-1)
-#define README_SECTOR_START (GPL_SECTOR_END+1)
-#define README_SECTOR_SIZE  24
-#define README_SECTOR_END   (README_SECTOR_START+README_SECTOR_SIZE-1)
-#define INDEX_SECTOR_START  (README_SECTOR_END+1)
-#define INDEX_SECTOR_SIZE   10
-#define INDEX_SECTOR_END    (INDEX_SECTOR_START+INDEX_SECTOR_SIZE-1)
+/* Sector no for Root:       3 */
+#define DROPHERE_SECTOR      4
+#define COPYING_SECTOR_START 5
+#define COPYING_SECTOR_END   (COPYING_SECTOR_START+COPYING_BLOCKS-1)
+#define README_SECTOR_START  (COPYING_SECTOR_END+1)
+#define README_SECTOR_END    (README_SECTOR_START+README_BLOCKS-1)
+#define INDEX_SECTOR_START   (README_SECTOR_END+1)
+#define INDEX_SECTOR_END     (INDEX_SECTOR_START+INDEX_BLOCKS-1)
 
 #define CLSTR_NO(sec_no) (sec_no-2)
 
 static const uint8_t d0_fat0_sector[] = {
   0xf8, 0xff, 0xff,  /* Media descriptor: fixed disk *//* EOC */
-  0xff, 0x4f, 0x00,  /* DROPME: cluster 2: used *//* GPL start: cluster 3: 4 */
-  0x05, 0x60, 0x00,  0x07, 0x80, 0x00,  /* cluster N:  N+1  ...  ... */
-  0x09, 0xa0, 0x00,  0x0b, 0xc0, 0x00,  0x0d, 0xe0, 0x00,  0x0f, 0x00, 0x01,
-  0x11, 0x20, 0x01,  0x13, 0x40, 0x01,  0x15, 0x60, 0x01,  0x17, 0x80, 0x01,
-  0x19, 0xa0, 0x01,  0x1b, 0xc0, 0x01,  0x1d, 0xe0, 0x01,  0x1f, 0x00, 0x02,
-  0x21, 0x20, 0x02,  0x23, 0x40, 0x02,  0x25, 0x60, 0x02,  0x27, 0x80, 0x02,
-  0x29, 0xa0, 0x02,  0x2b, 0xc0, 0x02,  0x2d, 0xe0, 0x02,  0x2f, 0x00, 0x03,
-  0x31, 0x20, 0x03,  0x33, 0x40, 0x03,  0x35, 0x60, 0x03,  0x37, 0x80, 0x03,
-  0x39, 0xa0, 0x03,  0x3b, 0xc0, 0x03,  0x3d, 0xe0, 0x03,  0x3f, 0x00, 0x04,
-  0x41, 0x20, 0x04,  0x43, 0x40, 0x04,  0x45, 0x60, 0x04,  0x47, 0xf0, 0xff,
-  /* End of GPL (69 sectors).  */ /* README start.  */
-  0x49, 0xa0, 0x04,  0x4b, 0xc0, 0x04,  0x4d, 0xe0, 0x04,  0x4f, 0x00, 0x05,
-  0x51, 0x20, 0x05,  0x53, 0x40, 0x05,  0x55, 0x60, 0x05,  0x57, 0x80, 0x05,
-  0x59, 0xa0, 0x05,  0x5b, 0xc0, 0x05,  0x5d, 0xe0, 0x05,  0x5f, 0xf0, 0xff,
-  /* End of README (24 sectors). */ /* INDEX.HTM start.  */
-  0x61, 0x20, 0x06,  0x63, 0x40, 0x06,  0x65, 0x60, 0x06,  0x67, 0x80, 0x06,
-  0x69, 0xf0, 0xff,
-  /* End of INDEX.HTM (10 sectors).  */
+  CLUSTER_MAP
 };
 
 static const uint8_t d0_rootdir_sector[] = {
@@ -158,35 +139,20 @@ static const uint8_t d0_rootdir_sector[] = {
 
   'C', 'O', 'P',  'Y',  'I',  'N',  'G',  ' ',  ' ',  ' ',  ' ', 
   /* "COPYING     " */
-  0x01, /* Read only, XXX: archive bit??? 20 */
-  0x00,
-  0x00, 0x0b, 0x64, 0x65, 0x43, /* Create Time */
-  0x63, 0x43, /* last access */
-  0x00, 0x00,
-  0xf1, 0x3e, 0xe2, 0x36,  /* last modified */
-  CLSTR_NO (GPL_SECTOR_START), 0x00,  /* cluster # */
-  0x4b, 0x89, 0x00, 0x00,  /* file size */
+  COPYING_ATTRIBUTES,
+  CLSTR_NO (COPYING_SECTOR_START), 0x00,  /* cluster # */
+  COPYING_FILE_SIZE,
 
   'R', 'E', 'A',  'D',  'M',  'E',  ' ',  ' ',  ' ',  ' ',  ' ', 
   /* "README      " */
-  0x01, /* Read only, XXX: archive bit??? 20 */
-  0x00,
-  0x64, 0x10, 0x64, 0x65, 0x43, /* Create Time */
-  0x63, 0x43, /* last access */
-  0x00, 0x00,
-  0xe4, 0x74, 0x16, 0x43,  /* last modified */
+  README_ATTRIBUTES,
   CLSTR_NO (README_SECTOR_START), 0x00,  /* cluster # */
-  0xc4, 0x2e, 0x00, 0x00,  /* file size */
+  README_FILE_SIZE,
 
   'I', 'N', 'D', 'E', 'X', ' ', ' ', ' ', 'H', 'T', 'M', /* INDEX.HTM */
-  0x01, /* Read only, XXX: archive bit??? 20 */
-  0x00,
-  0x64, 0x10, 0x64, 0x65, 0x43,  /* Create Time */
-  0x63, 0x43, /* last access */
-  0x00, 0x00,
-  0xe4, 0x74, 0x16, 0x43,  /* last modified */
+  INDEX_ATTRIBUTES,
   CLSTR_NO (INDEX_SECTOR_START), 0x00, /* cluster # */
-  0xe3, 0x13, 0x00, 0x00,  /* file size */
+  INDEX_FILE_SIZE,
 
   'D', 'R', 'O', 'P', 'H', 'E', 'R', 'E', ' ', ' ', ' ', /* DROPHERE */
   0x10, /* Sub directory */
@@ -285,15 +251,15 @@ msc_scsi_read (uint32_t lba, const uint8_t **sector_p)
       return 0;
 
     default:
-      if (lba >= GPL_SECTOR_START && lba <= GPL_SECTOR_END)
+      if (lba >= COPYING_SECTOR_START && lba <= COPYING_SECTOR_END)
 	{
-	  offset = (lba - GPL_SECTOR_START) * SECTOR_SIZE;
+	  offset = (lba - COPYING_SECTOR_START) * SECTOR_SIZE;
 	  size = SECTOR_SIZE;
 
-	  if (lba == GPL_SECTOR_END)
+	  if (lba == COPYING_SECTOR_END)
 	    {
 	      size = &_binary_COPYING_end - &_binary_COPYING_start
-		- (GPL_SECTOR_SIZE - 1) * SECTOR_SIZE;
+		- (COPYING_BLOCKS - 1) * SECTOR_SIZE;
 	      if (size != SECTOR_SIZE)
 		memset (the_sector + size, 0, SECTOR_SIZE - size);
 	    }
@@ -308,7 +274,7 @@ msc_scsi_read (uint32_t lba, const uint8_t **sector_p)
 	  if (lba == README_SECTOR_END)
 	    {
 	      size = &_binary_README_end - &_binary_README_start
-		- (README_SECTOR_SIZE - 1) * SECTOR_SIZE;
+		- (README_BLOCKS - 1) * SECTOR_SIZE;
 	      if (size != SECTOR_SIZE)
 		memset (the_sector + size, 0, SECTOR_SIZE - size);
 	    }
@@ -323,7 +289,7 @@ msc_scsi_read (uint32_t lba, const uint8_t **sector_p)
 	  if (lba == INDEX_SECTOR_END)
 	    {
 	      size = &_binary_INDEX_end - &_binary_INDEX_start
-		- (INDEX_SECTOR_SIZE - 1) * SECTOR_SIZE;
+		- (INDEX_BLOCKS - 1) * SECTOR_SIZE;
 	      if (size != SECTOR_SIZE)
 		memset (the_sector + size, 0, SECTOR_SIZE - size);
 	    }
