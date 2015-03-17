@@ -25,13 +25,17 @@ DIR=$(dirname $THIS_SCRIPT)
 
 vidpid=$1
 with_index=$2
+REVISION=$3
+REVISION_CHOPSTX=$4
+REVISION_FRAUCHEKY=$5
 
 # Copy INDEX file.
 if test "$with_index" = "no"; then
   echo "Please specify INDEX file by --with-index=<INDEX> option." 
   exit 1
 else
-  cp -p $with_index INDEX
+  sed -e "s%@REVISION@%$REVISION%" -e "s%@REVISION_CHOPSTX@%$REVISION_CHOPSTX%"\
+      -e "s%@REVISION_FRAUCHEKY@%$REVISION_FRAUCHEKY%" $with_index > INDEX
 fi
 
 # Copy GPL if not.

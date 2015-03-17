@@ -1,5 +1,11 @@
 2015-03-17  Niibe Yutaka  <gniibe@fsij.org>
 
+	* VERSION: Version 0.2.
+
+	* configure: Generate INDEX substituting @REVISION@.
+
+2015-03-17  Niibe Yutaka  <gniibe@fsij.org>
+
 	* VERSION: Version 0.1a.
 
 2015-01-21  Niibe Yutaka  <gniibe@fsij.org>
