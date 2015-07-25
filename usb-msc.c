@@ -330,12 +330,9 @@ msc_handle_command (void)
   CSW.dCSWTag = CBW.dCBWTag;
   switch (CBW.CBWCB[0]) {
   case SCSI_REPORT_LUN:
-    buf[0]  = buf[1] = buf[2] = 0;
-    buf[3]  = 8;
+    buf[0]  = buf[1] = buf[2] = buf[3] = 0;
     buf[4]  = buf[5] = buf[6] = buf[7] = 0;
-    buf[8]  = buf[9] = buf[10]= buf[11]= 0;
-    buf[12] = buf[13]= buf[14]= buf[15]= 0;
-    msc_send_result (buf, 16);
+    msc_send_result (buf, 8);
     goto done;
   case SCSI_REQUEST_SENSE:
     if (CBW.CBWCB[1] & 0x01) /* DESC */

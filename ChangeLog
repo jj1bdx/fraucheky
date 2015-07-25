@@ -1,3 +1,8 @@
+2015-07-25  Niibe Yutaka  <gniibe@fsij.org>
+
+	* usb-msc.c (msc_handle_command): LUN=0 should not be in the LUN
+	LIST.  Return empty list (LUN LIST LENGTH = 0).
+
 2015-07-23  Niibe Yutaka  <gniibe@fsij.org>
 
 	* usb-msc.c (msc_handle_command): Handle SCSI_REPORT_LUN command.
