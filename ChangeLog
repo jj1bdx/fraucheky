@@ -1,3 +1,9 @@
+2015-07-26  Kenji Rikitake  <kenji@k2r.org>
+
+	* usb-msc.c (scsi_inquiry_data_83): New.
+	(scsi_inquiry_data): Version = 0 (was: 5:SPC-3).
+	(msc_handle_command): Better interoperability for SCSI_INQUIRY.
+
 2015-07-25  Niibe Yutaka  <gniibe@fsij.org>
 
 	* usb-msc.c (msc_handle_command): LUN=0 should not be in the LUN
