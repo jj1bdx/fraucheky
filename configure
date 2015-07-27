@@ -20,6 +20,51 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+##########################################################
+# Build operating system detection and portability support
+#
+# This script uses somewhat non-portable utility named 'stat'
+# to get mata information of files.
+#
+# Since the command line syntax of stat depends on operating system,
+# this script detects the operating system at the initialization, and
+# use the function get_size_and_timestamp which changes its behavior
+# with $OS variable.
+#
+# Global variable OS will have the operating system detected.
+#
+# Currently, only GNU and OTHER is supported, where OTHER means
+# FreeBSD or Mac OS X.
+
+function check_build_operating_system {
+    local os
+    os=$(uname -o 2>/dev/null)
+
+    if [[ $? -eq 0 && "$os" =~ ^GNU ]]; then
+	# -o option of uname command is not POSIX-compliant.
+        # It is (only) available on GNU system.
+	# If it accepts -o option and the string starts with "GNU",
+	# It must be GNU operating system which respects users' freedom.
+	OS=GNU
+    else
+	OS=OTHER
+    fi
+}
+
+function get_size_and_timestamp {
+    local filename=$1
+
+    if [ "$OS" = GNU ]; then
+	stat -L -c '%s %X %Y %Z' $filename
+    else
+	stat -L -f '%z %a %m %c' $filename
+    fi
+}
+##########################################################
+
+
+check_build_operating_system
+
 THIS_SCRIPT=$0
 DIR=$(dirname $THIS_SCRIPT)
 
@@ -30,7 +75,7 @@ REVISION_CHOPSTX=$4
 REVISION_FRAUCHEKY=$5
 
 # Copy INDEX file.
-if test "$with_index" = "no"; then
+if test "$with_index" = "none"; then
   echo "Please specify INDEX file by --with-index=<INDEX> option." 
   exit 1
 else
@@ -194,7 +239,7 @@ function output_file_param {
 
 function file_info {
     for filename in $*; do
-	output_file_param $filename $(stat -L -c '%s %X %Y %Z' $filename)
+	output_file_param $filename $(get_size_and_timestamp $filename)
     done
 }
 
