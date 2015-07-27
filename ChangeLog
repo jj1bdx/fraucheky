@@ -1,3 +1,9 @@
+2015-07-27  Niibe Yutaka  <gniibe@fsij.org>
+
+	* configure (check_build_operating_system)
+	(get_size_and_timestamp): New.  Support FreeBSD for build system.
+	Reported by Kenji Rikitake.
+
 2015-07-26  Kenji Rikitake  <kenji@k2r.org>
 
 	* usb-msc.c (scsi_inquiry_data_83): New.
