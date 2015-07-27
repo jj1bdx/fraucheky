@@ -239,14 +239,7 @@ function output_file_param {
 
 function file_info {
     for filename in $*; do
-<<<<<<< HEAD
-    # Linuxism
-    #output_file_param $filename $(stat -L -c '%s %X %Y %Z' $filename)
-    # OS X
-    output_file_param $filename $(stat -L -f '%z %a %m %c' $filename)
-=======
 	output_file_param $filename $(get_size_and_timestamp $filename)
->>>>>>> master
     done
 }
 
