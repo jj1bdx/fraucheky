@@ -1,5 +1,8 @@
 2015-07-28  Niibe Yutaka  <gniibe@fsij.org>
 
+	* usb-msc.c (fraucheky_main): Clear fraucheky_main_done at end.
+	* disk-on-rom.c (msc_scsi_write): Check fraucheky_enabled.
+
 	* fraucheky.c (fraucheky_setup, fraucheky_get_descriptor): Follow
 	the API change of USB driver.
 
