@@ -1,3 +1,7 @@
+2015-07-31  Niibe Yutaka  <gniibe@fsij.org>
+
+	* VERSION: Version 0.3.
+
 2015-07-28  Niibe Yutaka  <gniibe@fsij.org>
 
 	* usb-msc.c (fraucheky_main): Clear fraucheky_main_done at end.

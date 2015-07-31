@@ -1,4 +1,4 @@
-* We should support enabling fraucheky again
+* [Partially DONE] We should support enabling fraucheky again
 
   rom_var is currently two byte variable.
 
@@ -13,7 +13,7 @@
   (like pin-dnd.c in Gnuk)
 
 
-* Device on external chip
+* file system data on external chip
 
 
 * [DONE] Many things are hard wired
