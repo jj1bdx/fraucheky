@@ -1,3 +1,15 @@
+2015-07-31  Niibe Yutaka  <gniibe@fsij.org>
+
+	* VERSION: Version 0.3.
+
+2015-07-28  Niibe Yutaka  <gniibe@fsij.org>
+
+	* usb-msc.c (fraucheky_main): Clear fraucheky_main_done at end.
+	* disk-on-rom.c (msc_scsi_write): Check fraucheky_enabled.
+
+	* fraucheky.c (fraucheky_setup, fraucheky_get_descriptor): Follow
+	the API change of USB driver.
+
 2015-07-27  Niibe Yutaka  <gniibe@fsij.org>
 
 	* configure (check_build_operating_system)

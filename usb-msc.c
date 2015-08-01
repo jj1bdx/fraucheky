@@ -580,6 +580,7 @@ fraucheky_main (void)
   msc_media_insert_change (128);
   while (!fraucheky_main_done)
     msc_handle_command ();
+  fraucheky_main_done = 0;
 }
 
 

@@ -29,6 +29,9 @@
 #include "msc.h"
 #include "sys.h"
 
+extern uint8_t fraucheky_main_done;
+extern int fraucheky_enabled (void);
+
 extern uint8_t _binary_COPYING_start;
 extern uint8_t _binary_COPYING_end;
 extern uint8_t _binary_README_start;
@@ -199,7 +202,7 @@ msc_scsi_write (uint32_t lba, const uint8_t *buf, size_t size)
   if (p_msc_scsi_write)
     return (*p_msc_scsi_write) (lba, buf, size);
 
-  if (lba == DROPHERE_SECTOR)
+  if (fraucheky_enabled () && lba == DROPHERE_SECTOR)
     {
       flash_unlock ();
       flash_program_halfword ((uint32_t)&rom_var, 0);
@@ -305,8 +308,6 @@ msc_scsi_read (uint32_t lba, const uint8_t **sector_p)
 void
 msc_scsi_stop (uint8_t code)
 {
-  extern uint8_t fraucheky_main_done;
-
   if (p_msc_scsi_stop)
     (*p_msc_scsi_stop) (code);
   else

@@ -1,7 +1,7 @@
 /*
  * flaucheky.c -- the USB Mass Storage Class device
  *
- * Copyright (C) 2013 Free Software Initiative of Japan
+ * Copyright (C) 2013, 2015 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Fraucheky, making sure to have GNU GPL on a
@@ -135,19 +135,14 @@ fraucheky_setup_endpoints_for_interface (int stop)
 }
 
 int
-fraucheky_setup (uint8_t req, uint8_t req_no, uint16_t value, uint16_t len)
+fraucheky_setup (uint8_t req, uint8_t req_no, struct control_info *detail)
 {
   static const uint8_t lun_table[] = { 0, 0, 0, 0, };
 
-  (void)value;
-  (void)len;
   if (USB_SETUP_GET (req))
     {
       if (req_no == MSC_GET_MAX_LUN_COMMAND)
-	{
-	  usb_lld_set_data_to_send (lun_table, sizeof (lun_table));
-	  return USB_SUCCESS;
-	}
+	return usb_lld_reply_request (lun_table, sizeof (lun_table), detail);
     }
   else
     if (req_no == MSC_MASS_STORAGE_RESET_COMMAND)
@@ -159,32 +154,25 @@ fraucheky_setup (uint8_t req, uint8_t req_no, uint16_t value, uint16_t len)
 
 int
 fraucheky_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
-			  uint16_t index)
+			  struct control_info *detail)
 {
   if (rcp == DEVICE_RECIPIENT)
     {
-      if (desc_type == DEVICE_DESCRIPTOR && index == 0)
-	{
-	  usb_lld_set_data_to_send (device_desc, sizeof (device_desc));
-	  return USB_SUCCESS;
-	}
-      else if (desc_type == CONFIG_DESCRIPTOR && index == 0)
-	{
-	  usb_lld_set_data_to_send (config_desc, sizeof (config_desc));
-	  return USB_SUCCESS;
-	}
+      if (desc_type == DEVICE_DESCRIPTOR && detail->index == 0)
+	return usb_lld_reply_request (device_desc, sizeof (device_desc), detail);
+      else if (desc_type == CONFIG_DESCRIPTOR && detail->index == 0)
+	return usb_lld_reply_request (config_desc, sizeof (config_desc), detail);
       else if (desc_type == STRING_DESCRIPTOR)
 	{
-	  if (!((index == 0 && desc_index == 0) || index == 0x0409))
+	  if (desc_index >= sizeof (string_descriptors) / sizeof (struct desc)
+	      || !((detail->index == 0 && desc_index == 0)
+		   || detail->index == 0x0409))
 	    /* We only provide string in English.  */
 	    return USB_UNSUPPORT;
 
-	  if (desc_index < sizeof (string_descriptors) / sizeof (struct desc))
-	    {
-	      usb_lld_set_data_to_send (string_descriptors[desc_index].desc,
-					string_descriptors[desc_index].size);
-	      return USB_SUCCESS;
-	    }
+	  return usb_lld_reply_request (string_descriptors[desc_index].desc,
+					string_descriptors[desc_index].size,
+					detail);
 	}
     }
 
