@@ -1,7 +1,7 @@
 /*
  * flaucheky.c -- the USB Mass Storage Class device
  *
- * Copyright (C) 2013, 2015 Free Software Initiative of Japan
+ * Copyright (C) 2013, 2015, 2016  Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Fraucheky, making sure to have GNU GPL on a
@@ -40,7 +40,7 @@
 /* USB Standard Device Descriptor */
 static const uint8_t device_desc[] = {
   18,   /* bLength */
-  USB_DEVICE_DESCRIPTOR_TYPE,     /* bDescriptorType */
+  DEVICE_DESCRIPTOR,     /* bDescriptorType */
   0x10, 0x01,   /* bcdUSB = 1.1 */
   0x00,   /* bDeviceClass: 0 means deferred to interface */
   0x00,   /* bDeviceSubClass */
@@ -58,8 +58,8 @@ static const uint8_t device_desc[] = {
 /* Configuation Descriptor */
 static const uint8_t config_desc[] = {
   9,			         /* bLength: Configuation Descriptor size */
-  USB_CONFIGURATION_DESCRIPTOR_TYPE,    /* bDescriptorType: Configuration */
-  (9+9+7+7), 0x00,                 /* wTotalLength:no of returned bytes */
+  CONFIG_DESCRIPTOR,             /* bDescriptorType: Configuration */
+  (9+9+7+7), 0x00,               /* wTotalLength:no of returned bytes */
   1,				 /* bNumInterfaces: */
   0x01,                          /* bConfigurationValue: Configuration value */
   0x00,				 /* iConfiguration.  */
@@ -68,7 +68,7 @@ static const uint8_t config_desc[] = {
 
   /* Interface Descriptor.*/
   9,			         /* bLength: Interface Descriptor size */
-  USB_INTERFACE_DESCRIPTOR_TYPE, /* bDescriptorType: Interface         */
+  INTERFACE_DESCRIPTOR,          /* bDescriptorType: Interface         */
   0,				 /* bInterfaceNumber.                  */
   0x00,				 /* bAlternateSetting.                 */
   0x02,				 /* bNumEndpoints.                     */
@@ -81,14 +81,14 @@ static const uint8_t config_desc[] = {
   0x00,				 /* iInterface.                        */
   /* Endpoint Descriptor.*/
   7,			         /* bLength: Endpoint Descriptor size  */
-  USB_ENDPOINT_DESCRIPTOR_TYPE,	 /* bDescriptorType: Endpoint          */
+  ENDPOINT_DESCRIPTOR,   	 /* bDescriptorType: Endpoint          */
   0x86,				 /* bEndpointAddress: (IN6)            */
   0x02,				 /* bmAttributes (Bulk).               */
   0x40, 0x00,			 /* wMaxPacketSize.                    */
   0x00,				 /* bInterval (ignored for bulk).      */
   /* Endpoint Descriptor.*/
   7,			         /* bLength: Endpoint Descriptor size  */
-  USB_ENDPOINT_DESCRIPTOR_TYPE,	 /* bDescriptorType: Endpoint          */
+  ENDPOINT_DESCRIPTOR,   	 /* bDescriptorType: Endpoint          */
   0x06,				 /* bEndpointAddress: (OUT6)           */
   0x02,				 /* bmAttributes (Bulk).               */
   0x40, 0x00,			 /* wMaxPacketSize.                    */
@@ -99,7 +99,7 @@ static const uint8_t config_desc[] = {
 /* USB String Descriptors */
 static const uint8_t string_lang_id[] = {
   4,				/* bLength */
-  USB_STRING_DESCRIPTOR_TYPE,
+  STRING_DESCRIPTOR,
   0x09, 0x04			/* LangID = 0x0409: US-English */
 };
 
@@ -107,7 +107,7 @@ static const uint8_t string_lang_id[] = {
 
 static const uint8_t string_serial[] = {
   8*2+2,			/* bLength */
-  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */
+  STRING_DESCRIPTOR,    	/* bDescriptorType */
   /* Serial number: "FSIJ-0.0" */
   'F', 0, 'S', 0, 'I', 0, 'J', 0, '-', 0, '0', 0, '.', 0, '0', 0,
 };
@@ -135,14 +135,14 @@ fraucheky_setup_endpoints_for_interface (int stop)
 }
 
 int
-fraucheky_setup (uint8_t req, uint8_t req_no, struct control_info *detail)
+fraucheky_setup (uint8_t req, uint8_t req_no, struct req_args *arg)
 {
   static const uint8_t lun_table[] = { 0, 0, 0, 0, };
 
   if (USB_SETUP_GET (req))
     {
       if (req_no == MSC_GET_MAX_LUN_COMMAND)
-	return usb_lld_reply_request (lun_table, sizeof (lun_table), detail);
+	return usb_lld_reply_request (lun_table, sizeof (lun_table), arg);
     }
   else
     if (req_no == MSC_MASS_STORAGE_RESET_COMMAND)
@@ -154,25 +154,25 @@ fraucheky_setup (uint8_t req, uint8_t req_no, struct control_info *detail)
 
 int
 fraucheky_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
-			  struct control_info *detail)
+			  struct req_args *arg)
 {
   if (rcp == DEVICE_RECIPIENT)
     {
-      if (desc_type == DEVICE_DESCRIPTOR && detail->index == 0)
-	return usb_lld_reply_request (device_desc, sizeof (device_desc), detail);
-      else if (desc_type == CONFIG_DESCRIPTOR && detail->index == 0)
-	return usb_lld_reply_request (config_desc, sizeof (config_desc), detail);
+      if (desc_type == DEVICE_DESCRIPTOR && arg->index == 0)
+	return usb_lld_reply_request (device_desc, sizeof (device_desc), arg);
+      else if (desc_type == CONFIG_DESCRIPTOR && arg->index == 0)
+	return usb_lld_reply_request (config_desc, sizeof (config_desc), arg);
       else if (desc_type == STRING_DESCRIPTOR)
 	{
 	  if (desc_index >= sizeof (string_descriptors) / sizeof (struct desc)
-	      || !((detail->index == 0 && desc_index == 0)
-		   || detail->index == 0x0409))
+	      || !((arg->index == 0 && desc_index == 0)
+		   || arg->index == 0x0409))
 	    /* We only provide string in English.  */
 	    return USB_UNSUPPORT;
 
 	  return usb_lld_reply_request (string_descriptors[desc_index].desc,
 					string_descriptors[desc_index].size,
-					detail);
+					arg);
 	}
     }
 

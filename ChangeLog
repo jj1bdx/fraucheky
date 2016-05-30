@@ -1,3 +1,10 @@
+2016-05-30  Niibe Yutaka  <gniibe@fsij.org>
+
+	* disk-on-rom.c: Follow the change of Chopstx SYS API.
+
+	* fraucheky.c: Follow the change of Chopstx USB	API.
+	* usb-msc.c (EP6_IN_Callback): Likewise.
+
 2015-07-31  Niibe Yutaka  <gniibe@fsij.org>
 
 	* VERSION: Version 0.3.

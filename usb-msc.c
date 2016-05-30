@@ -80,24 +80,21 @@ static void usb_start_transmit (const uint8_t *p, size_t n)
 
 /* "Data Transmitted" callback */
 void
-EP6_IN_Callback (void)
+EP6_IN_Callback (uint32_t len)
 {
-  size_t n;
-
   chopstx_mutex_lock (&msc_mutex);
 
-  n = (size_t)usb_lld_tx_data_len (ENDP6);
-  ep6_in.txbuf += n;
-  ep6_in.txcnt += n;
-  ep6_in.txsize -= n;
+  ep6_in.txbuf += len;
+  ep6_in.txcnt += len;
+  ep6_in.txsize -= len;
 
   if (ep6_in.txsize > 0)	/* More data to be sent */
     {
       if (ep6_in.txsize > ENDP_MAX_SIZE)
-	n = ENDP_MAX_SIZE;
+	len = ENDP_MAX_SIZE;
       else
-	n = ep6_in.txsize;
-      usb_lld_write (ENDP6, (uint8_t *)ep6_in.txbuf, n);
+	len = ep6_in.txsize;
+      usb_lld_write (ENDP6, (uint8_t *)ep6_in.txbuf, len);
     }
   else
     /* Transmit has been completed, notify the waiting thread */
