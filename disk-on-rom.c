@@ -27,7 +27,7 @@
 
 #include "disk-on-rom.h"
 #include "msc.h"
-#include "sys.h"
+#include "mcu/sys-stm32f103.h"
 
 extern uint8_t fraucheky_main_done;
 extern int fraucheky_enabled (void);
