@@ -1,3 +1,13 @@
+2016-06-01  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* fraucheky.c (fraucheky_setup_endpoints_for_interface): Call
+	fraucheky_reset to let msc_handle_command return error and
+	restart receiving command.
+
+	* usb-msc.c (fraucheky_main_active): New.
+	(fraucheky_main_done): Remove.
+	* disk-on-rom.c (msc_scsi_stop): Use fraucheky_main_active.
+
 2016-05-30  Niibe Yutaka  <gniibe@fsij.org>
 
 	* disk-on-rom.c: Follow the change of Chopstx SYS API.
