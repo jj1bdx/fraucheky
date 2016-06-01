@@ -125,8 +125,13 @@ static const struct desc string_descriptors[] = {
 void
 fraucheky_setup_endpoints_for_interface (int stop)
 {
+  extern void fraucheky_reset (void);
+
   if (!stop)
-    usb_lld_setup_endpoint (ENDP6, EP_BULK, 0, ENDP6_RXADDR, ENDP6_TXADDR, 64);
+    {
+      usb_lld_setup_endpoint (ENDP6, EP_BULK, 0, ENDP6_RXADDR, ENDP6_TXADDR, 64);
+      fraucheky_reset ();
+    }
   else
     {
       usb_lld_stall_tx (ENDP6);

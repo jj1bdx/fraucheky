@@ -1,7 +1,7 @@
 /*
  * disk-on-rom.c -- FAT storage (GPL, README, and INDEX.HTM) on ROM
  *
- * Copyright (C) 2013, 2015 Free Software Initiative of Japan
+ * Copyright (C) 2013, 2015, 2016  Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Fraucheky, GNU GPL in a USB thumb drive
@@ -27,9 +27,9 @@
 
 #include "disk-on-rom.h"
 #include "msc.h"
-#include "mcu/sys-stm32f103.h"
+#include "sys.h"
 
-extern uint8_t fraucheky_main_done;
+extern int fraucheky_main_active;
 extern int fraucheky_enabled (void);
 
 extern uint8_t _binary_COPYING_start;
@@ -311,5 +311,5 @@ msc_scsi_stop (uint8_t code)
   if (p_msc_scsi_stop)
     (*p_msc_scsi_stop) (code);
   else
-    fraucheky_main_done = 1;
+    fraucheky_main_active = 0;
 }

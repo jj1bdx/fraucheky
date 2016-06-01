@@ -1,7 +1,7 @@
 /*
  * usb-msc.c -- USB Mass Storage Class protocol handling
  *
- * Copyright (C) 2011, 2012, 2013, 2015
+ * Copyright (C) 2011, 2012, 2013, 2015, 2016
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -311,6 +311,7 @@ msc_handle_command (void)
 
   chopstx_mutex_lock (&msc_mutex);
   msc_state = MSC_IDLE;
+  msg = RDY_RESET;
   usb_start_receive ((uint8_t *)&CBW, sizeof CBW);
   chopstx_cond_wait (&msc_cond, &msc_mutex);
 
@@ -557,7 +558,7 @@ msc_handle_command (void)
 }
 
 
-uint8_t fraucheky_main_done;
+int fraucheky_main_active;
 
 extern const uint16_t rom_var;
 const uint16_t *fraucheky_enabled_var = &rom_var;
@@ -569,19 +570,26 @@ fraucheky_enabled (void)
 }
 
 void
+fraucheky_reset (void)
+{
+  if (fraucheky_main_active)
+    chopstx_cond_signal (&msc_cond);
+}
+
+void
 fraucheky_main (void)
 {
   chopstx_mutex_init (&msc_mutex);
   chopstx_cond_init (&msc_cond);
 
+  fraucheky_main_active = 1;
   msc_media_insert_change (128);
-  while (!fraucheky_main_done)
+  while (fraucheky_main_active)
     msc_handle_command ();
-  fraucheky_main_done = 0;
 }
 
 
-#if 0
+#if TEST_FRAUCHEKY
 static void *
 msc_main (void *arg)
 {
