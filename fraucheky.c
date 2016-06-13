@@ -140,46 +140,52 @@ fraucheky_setup_endpoints_for_interface (int stop)
 }
 
 int
-fraucheky_setup (uint8_t req, uint8_t req_no, struct req_args *arg)
+fraucheky_setup (struct usb_dev *dev)
 {
+  struct device_req *arg = &dev->dev_req;
+
   static const uint8_t lun_table[] = { 0, 0, 0, 0, };
 
-  if (USB_SETUP_GET (req))
+  if (USB_SETUP_GET (arg->type))
     {
-      if (req_no == MSC_GET_MAX_LUN_COMMAND)
-	return usb_lld_reply_request (lun_table, sizeof (lun_table), arg);
+      if (arg->request == MSC_GET_MAX_LUN_COMMAND)
+	return usb_lld_ctrl_send (dev, lun_table, sizeof (lun_table));
     }
   else
-    if (req_no == MSC_MASS_STORAGE_RESET_COMMAND)
+    if (arg->request == MSC_MASS_STORAGE_RESET_COMMAND)
       /* Should call resetting MSC thread, something like msc_reset () */
-      return USB_SUCCESS;
+      return usb_lld_ctrl_ack (dev);
 
-  return USB_UNSUPPORT;
+  return -1;
 }
 
 int
-fraucheky_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
-			  struct req_args *arg)
+fraucheky_get_descriptor (struct usb_dev *dev)
 {
+  struct device_req *arg = &dev->dev_req;
+  uint8_t rcp = arg->type & RECIPIENT;
+  uint8_t desc_type = (arg->value >> 8);
+  uint8_t desc_index = (arg->value & 0xff);
+
   if (rcp == DEVICE_RECIPIENT)
     {
       if (desc_type == DEVICE_DESCRIPTOR && arg->index == 0)
-	return usb_lld_reply_request (device_desc, sizeof (device_desc), arg);
+	return usb_lld_ctrl_send (dev, device_desc, sizeof (device_desc));
       else if (desc_type == CONFIG_DESCRIPTOR && arg->index == 0)
-	return usb_lld_reply_request (config_desc, sizeof (config_desc), arg);
+	return usb_lld_ctrl_send (dev, config_desc, sizeof (config_desc));
       else if (desc_type == STRING_DESCRIPTOR)
 	{
 	  if (desc_index >= sizeof (string_descriptors) / sizeof (struct desc)
 	      || !((arg->index == 0 && desc_index == 0)
 		   || arg->index == 0x0409))
 	    /* We only provide string in English.  */
-	    return USB_UNSUPPORT;
+	    return -1;
 
-	  return usb_lld_reply_request (string_descriptors[desc_index].desc,
-					string_descriptors[desc_index].size,
-					arg);
+	  return usb_lld_ctrl_send (dev,
+				    string_descriptors[desc_index].desc,
+				    string_descriptors[desc_index].size);
 	}
     }
 
-  return USB_UNSUPPORT;
+  return -1;
 }
