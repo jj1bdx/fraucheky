@@ -223,7 +223,7 @@ static uint8_t keep_contingent_allegiance;
 
 #define MEDIA_AVAILABLE() (number_of_blocks != 0)
 
-void
+static void
 msc_media_insert_change (uint32_t nblocks)
 {
   chopstx_mutex_lock (&msc_mutex);
@@ -300,7 +300,7 @@ static void msc_send_result (const uint8_t *p, size_t n)
 }
 
 
-void
+static void
 msc_handle_command (void)
 {
   size_t n;

@@ -151,9 +151,8 @@ fraucheky_setup (struct usb_dev *dev)
       if (arg->request == MSC_GET_MAX_LUN_COMMAND)
 	return usb_lld_ctrl_send (dev, lun_table, sizeof (lun_table));
     }
-  else
+  else /* SETUP_SET */
     if (arg->request == MSC_MASS_STORAGE_RESET_COMMAND)
-      /* Should call resetting MSC thread, something like msc_reset () */
       return usb_lld_ctrl_ack (dev);
 
   return -1;
