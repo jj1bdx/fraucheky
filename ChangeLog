@@ -1,3 +1,7 @@
+2016-06-14  Niibe Yutaka  <gniibe@fsij.org>
+
+	* VERSION: Version 0.4.
+
 2016-06-13  Niibe Yutaka  <gniibe@fsij.org>
 
 	* fraucheky.c, usb-msc.c: Update with new USB API.
