@@ -118,7 +118,11 @@ static void usb_start_receive (uint8_t *p, size_t n)
   ep6_out.rxbuf = p;
   ep6_out.rxsize = n;
   ep6_out.rxcnt = 0;
+#ifdef GNU_LINUX_EMULATION
+  usb_lld_rx_enable_buf (ENDP6, ep6_out.rxbuf, ep6_out.rxsize);
+#else
   usb_lld_rx_enable (ENDP6);
+#endif
 }
 
 /* "Data Received" call back */
@@ -136,14 +140,19 @@ EP6_OUT_Callback (uint16_t len)
       n = ep6_out.rxsize;
     }
 
+#ifndef GNU_LINUX_EMULATION
   usb_lld_rxcpy (ep6_out.rxbuf, ENDP6, 0, n);
+#endif
   ep6_out.rxbuf += n;
   ep6_out.rxcnt += n;
   ep6_out.rxsize -= n;
 
-  if (n == ENDP_MAX_SIZE && ep6_out.rxsize != 0)
-    /* More data to be received */
+  if (n == ENDP_MAX_SIZE && ep6_out.rxsize != 0) /* More data to be received */
+#ifdef GNU_LINUX_EMULATION
+    usb_lld_rx_enable_buf (ENDP6, ep6_out.rxbuf, ep6_out.rxsize);
+#else
     usb_lld_rx_enable (ENDP6);
+#endif
   else
     /* Receiving has been completed, notify the waiting thread */
     switch (msc_state)

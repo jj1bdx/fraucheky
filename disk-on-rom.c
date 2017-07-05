@@ -202,11 +202,13 @@ msc_scsi_write (uint32_t lba, const uint8_t *buf, size_t size)
   if (p_msc_scsi_write)
     return (*p_msc_scsi_write) (lba, buf, size);
 
+#if !defined(GNU_LINUX_EMULATION)
   if (fraucheky_enabled () && lba == DROPHERE_SECTOR)
     {
       flash_unlock ();
-      flash_program_halfword ((uint32_t)&rom_var, 0);
+      flash_program_halfword ((uintptr_t)&rom_var, 0);
     }
+#endif
 
   return 0;
 }

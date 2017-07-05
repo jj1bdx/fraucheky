@@ -1,6 +1,14 @@
 # Fraucheky make rules.
 
-OBJCOPY_BINARY_DATA=$(OBJCOPY) -I binary -O elf32-little \
+ifeq ($(BFDNAME_OBJ),)
+BFDNAME_OBJ = elf32-little
+endif
+
+ifneq ($(BFDARCH),)
+ARG_BFDARCH = -B $(BFDARCH)
+endif
+
+OBJCOPY_BINARY_DATA=$(OBJCOPY) -I binary -O $(BFDNAME_OBJ) $(ARG_BFDARCH) \
 	--rename-section .data=.rodata.file,alloc,load,readonly,data,contents
 
 $(BUILDDIR)/COPYING.o: COPYING
