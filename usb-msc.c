@@ -91,7 +91,7 @@ static void usb_start_transmit (const uint8_t *p, size_t n)
   ep6_in.txsize = n;
   ep6_in.txcnt = 0;
 
-  usb_lld_write (ENDP6, (uint8_t *)ep6_in.txbuf, pkt_len);
+  usb_lld_write (ENDP6, ep6_in.txbuf, pkt_len);
 }
 
 /* "Data Transmitted" callback */
@@ -110,7 +110,7 @@ EP6_IN_Callback (uint16_t len)
 	len = ENDP_MAX_SIZE;
       else
 	len = ep6_in.txsize;
-      usb_lld_write (ENDP6, (uint8_t *)ep6_in.txbuf, len);
+      usb_lld_write (ENDP6, ep6_in.txbuf, len);
     }
   else
     /* Transmit has been completed, notify the waiting thread */
@@ -373,11 +373,9 @@ msc_handle_command (void)
     goto done;
   case SCSI_REQUEST_SENSE:
     if (CBW.CBWCB[1] & 0x01) /* DESC */
-      msc_send_result ((uint8_t *)&scsi_sense_data_desc,
-		       sizeof scsi_sense_data_desc);
+      msc_send_result (scsi_sense_data_desc, sizeof scsi_sense_data_desc);
     else
-      msc_send_result ((uint8_t *)&scsi_sense_data_fixed,
-		       sizeof scsi_sense_data_fixed);
+      msc_send_result (scsi_sense_data_fixed, sizeof scsi_sense_data_fixed);
     /* After the error is reported, clear it, if it's .  */
     if (!keep_contingent_allegiance)
       {
@@ -391,16 +389,13 @@ msc_handle_command (void)
       {
 	if (CBW.CBWCB[2] == 0x83)
 	  /* Handle the case Page Code 0x83 */
-	  msc_send_result ((uint8_t *)&scsi_inquiry_data_83,
-			   sizeof scsi_inquiry_data_83);
+	  msc_send_result (scsi_inquiry_data_83, sizeof scsi_inquiry_data_83);
 	else
 	  /* Otherwise, assume page 00 */
-	  msc_send_result ((uint8_t *)&scsi_inquiry_data_00,
-			   sizeof scsi_inquiry_data_00);
+	  msc_send_result (scsi_inquiry_data_00, sizeof scsi_inquiry_data_00);
       }
     else
-      msc_send_result ((uint8_t *)&scsi_inquiry_data,
-		       sizeof scsi_inquiry_data);
+      msc_send_result (scsi_inquiry_data, sizeof scsi_inquiry_data);
     goto done;
   case SCSI_READ_FORMAT_CAPACITIES:
     buf[8]  = scsi_read_format_capacities (&nblocks, &secsize);
