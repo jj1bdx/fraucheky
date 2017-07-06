@@ -21,5 +21,5 @@ $(BUILDDIR)/INDEX.o: INDEX
 	$(OBJCOPY_BINARY_DATA) $< $@
 
 distclean::
-	-rm -f README INDEX \
+	-rm -f README INDEX COPYING \
 	       fraucheky-vid-pid-ver.c.inc fraucheky-usb-strings.c.inc disk-on-rom.h

@@ -1,5 +1,7 @@
 2017-07-06  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* build.mk (distclean): Add COPYING.
+
 	* usb-msc.c (msc_handle_command): Handle ATA_16 command
 	just like MODE_SENSE6.	Error handling fix.
 
