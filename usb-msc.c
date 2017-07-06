@@ -67,6 +67,22 @@ static struct usb_endp_out ep6_out;
 static uint8_t msc_state;
 
 
+#ifdef GNU_LINUX_EMULATION
+/*
+ * Semantics is a bit different.
+ *
+ * For usb_lld_tx_enable_buf, the extent of the buffer is 
+ * more than its call, it will be live until transfer
+ * finished.
+ * In this particular application, there is no problem.
+ */
+static void
+usb_lld_write (uint8_t ep_num, const void *buf, size_t len)
+{
+  usb_lld_tx_enable_buf (ep_num, buf, len);
+}
+#endif
+
 static void usb_start_transmit (const uint8_t *p, size_t n)
 {
   size_t pkt_len = n > ENDP_MAX_SIZE ? ENDP_MAX_SIZE : n;
@@ -113,13 +129,21 @@ EP6_IN_Callback (uint16_t len)
 }
 
 
+static size_t usb_buf_size (size_t n)
+{
+  if (n >= ENDP_MAX_SIZE)
+    return (size_t)ENDP_MAX_SIZE;
+  else
+    return n;
+}
+
 static void usb_start_receive (uint8_t *p, size_t n)
 {
   ep6_out.rxbuf = p;
   ep6_out.rxsize = n;
   ep6_out.rxcnt = 0;
 #ifdef GNU_LINUX_EMULATION
-  usb_lld_rx_enable_buf (ENDP6, ep6_out.rxbuf, ep6_out.rxsize);
+  usb_lld_rx_enable_buf (ENDP6, ep6_out.rxbuf, usb_buf_size (ep6_out.rxsize));
 #else
   usb_lld_rx_enable (ENDP6);
 #endif
@@ -149,7 +173,7 @@ EP6_OUT_Callback (uint16_t len)
 
   if (n == ENDP_MAX_SIZE && ep6_out.rxsize != 0) /* More data to be received */
 #ifdef GNU_LINUX_EMULATION
-    usb_lld_rx_enable_buf (ENDP6, ep6_out.rxbuf, ep6_out.rxsize);
+    usb_lld_rx_enable_buf (ENDP6, ep6_out.rxbuf, usb_buf_size (ep6_out.rxsize));
 #else
     usb_lld_rx_enable (ENDP6);
 #endif
@@ -420,6 +444,7 @@ msc_handle_command (void)
     msc_send_result (NULL, 0);
     goto done;
   case SCSI_MODE_SENSE6:
+  case SCSI_ATA_16:
     buf[0] = 0x03;
     buf[1] = buf[2] = buf[3] = 0;
     msc_send_result (buf, 4);
@@ -440,20 +465,11 @@ msc_handle_command (void)
   case SCSI_WRITE10:
     break;
   default:
-    if (CBW.dCBWDataTransferLength == 0)
-      {
-	CSW.bCSWStatus = MSC_CSW_STATUS_FAILED;
-	CSW.dCSWDataResidue = 0;
-	msc_send_result (NULL, 0);
-	goto done;
-      }
-    else
-      {
-	msc_state = MSC_ERROR;
-	usb_lld_stall_tx (ENDP6);
-	usb_lld_stall_rx (ENDP6);
-	goto done;
-      }
+    /* Check CBW.dCBWDataTransferLength == 0??? */
+    CSW.bCSWStatus = MSC_CSW_STATUS_FAILED;
+    CSW.dCSWDataResidue = 0;
+    msc_send_result (NULL, 0);
+    goto done;
   }
 
   lba = (CBW.CBWCB[2] << 24) | (CBW.CBWCB[3] << 16)
