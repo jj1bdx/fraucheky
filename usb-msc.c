@@ -460,11 +460,19 @@ msc_handle_command (void)
   case SCSI_WRITE10:
     break;
   default:
-    /* Check CBW.dCBWDataTransferLength == 0??? */
-    CSW.bCSWStatus = MSC_CSW_STATUS_FAILED;
-    CSW.dCSWDataResidue = 0;
-    msc_send_result (NULL, 0);
-    goto done;
+    if (CBW.dCBWDataTransferLength == 0)
+      {
+	CSW.bCSWStatus = MSC_CSW_STATUS_FAILED;
+	CSW.dCSWDataResidue = 0;
+	msc_send_result (NULL, 0);
+	goto done;
+      }
+    else
+      {
+	msc_state = MSC_ERROR;
+	usb_lld_stall_tx (ENDP6);
+	goto done;
+      }
   }
 
   lba = (CBW.CBWCB[2] << 24) | (CBW.CBWCB[3] << 16)
