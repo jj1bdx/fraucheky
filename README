@@ -1,14 +1,16 @@
 Fraucheky - the GPL container for USB devices
 
-							    Version 0.4
-							     2016-06-14
+							    Version 0.5
+							     2017-10-11
 						           Niibe Yutaka
 
 What's this?
 ============
 
 This is a set of routines to deliver GPL with USB device implementation.
-It is licensed under GPLv3.
+It is licensed under GPLv3 (or later).
 
+Please note that I don't know if later version(s) of GPL in future can
+be installed on the device (because of its size).
 
 Please see NeuG for a concrete example.
