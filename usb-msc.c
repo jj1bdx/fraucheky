@@ -129,6 +129,7 @@ EP6_IN_Callback (uint16_t len)
 }
 
 
+#ifdef GNU_LINUX_EMULATION
 static size_t usb_buf_size (size_t n)
 {
   if (n >= ENDP_MAX_SIZE)
@@ -136,6 +137,7 @@ static size_t usb_buf_size (size_t n)
   else
     return n;
 }
+#endif
 
 static void usb_start_receive (uint8_t *p, size_t n)
 {

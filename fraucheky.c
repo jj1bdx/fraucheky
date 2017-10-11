@@ -133,6 +133,7 @@ fraucheky_setup_endpoints_for_interface (struct usb_dev *dev, int stop)
 #ifdef GNU_LINUX_EMULATION
       usb_lld_setup_endp (dev, ENDP6, 1, 1);
 #else
+      (void)dev;
       usb_lld_setup_endpoint (ENDP6, EP_BULK, 0, ENDP6_RXADDR, ENDP6_TXADDR, 64);
 #endif
       fraucheky_reset ();

@@ -1,3 +1,10 @@
+2017-10-11  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* fraucheky.c (fraucheky_setup_endpoints_for_interface): For
+	STM32F103, we don't use DEV.
+	* usb-msc.c [GNU_LINUX_EMULATION] (usb_buf_size): Only for
+	GNU_LINUX_EMULATION.
+
 2017-10-10  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* build.mk (ARG_BFDNAME): New.
