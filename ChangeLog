@@ -1,3 +1,47 @@
+2017-10-11  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* VERSION: Version 0.5.
+
+	* fraucheky.c (fraucheky_setup_endpoints_for_interface): For
+	STM32F103, we don't use DEV.
+	* usb-msc.c [GNU_LINUX_EMULATION] (usb_buf_size): Only for
+	GNU_LINUX_EMULATION.
+
+2017-10-10  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* build.mk (ARG_BFDNAME): New.
+	(BFDNAME_OBJ): Remove.
+
+2017-07-07  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* usb-msc.c (msc_handle_command): Fix command error handling.
+
+2017-07-06  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* build.mk (distclean): Add COPYING.
+
+	* usb-msc.c (msc_handle_command): Handle ATA_16 command
+	just like MODE_SENSE6.	Error handling fix.
+
+2017-07-05  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* usb-msc.c [GNU_LINUX_EMULATION] (usb_start_receive): Use
+	usb_lld_rx_enable_buf.
+	[GNU_LINUX_EMULATION] (EP6_OUT_Callback): No need for rxcpy.
+	Use usb_lld_rx_enable_buf.
+
+	* fraucheky.c (fraucheky_setup_endpoints_for_interface): Change
+	API.  Support GNU_LINUX_EMULATION.
+
+	* disk-on-rom.c [GNU_LINUX_EMULATION] (msc_scsi_write): Don't
+	touch flash.
+
+	* configure (dongdong): Don't output '\'.
+	(cluster_map): Output '\' line instead of newline only.
+
+	* build.mk (BFDNAME_OBJ): New.
+	(ARG_BFDARCH): New.
+
 2016-06-14  Niibe Yutaka  <gniibe@fsij.org>
 
 	* VERSION: Version 0.4.

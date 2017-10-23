@@ -1,7 +1,8 @@
 /*
  * disk-on-rom.c -- FAT storage (GPL, README, and INDEX.HTM) on ROM
  *
- * Copyright (C) 2013, 2015, 2016  Free Software Initiative of Japan
+ * Copyright (C) 2013, 2015, 2016, 2017
+ *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Fraucheky, GNU GPL in a USB thumb drive
@@ -202,11 +203,13 @@ msc_scsi_write (uint32_t lba, const uint8_t *buf, size_t size)
   if (p_msc_scsi_write)
     return (*p_msc_scsi_write) (lba, buf, size);
 
+#if !defined(GNU_LINUX_EMULATION)
   if (fraucheky_enabled () && lba == DROPHERE_SECTOR)
     {
       flash_unlock ();
-      flash_program_halfword ((uint32_t)&rom_var, 0);
+      flash_program_halfword ((uintptr_t)&rom_var, 0);
     }
+#endif
 
   return 0;
 }

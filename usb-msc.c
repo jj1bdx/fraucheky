@@ -1,7 +1,7 @@
 /*
  * usb-msc.c -- USB Mass Storage Class protocol handling
  *
- * Copyright (C) 2011, 2012, 2013, 2015, 2016
+ * Copyright (C) 2011, 2012, 2013, 2015, 2016, 2017
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -67,6 +67,22 @@ static struct usb_endp_out ep6_out;
 static uint8_t msc_state;
 
 
+#ifdef GNU_LINUX_EMULATION
+/*
+ * Semantics is a bit different.
+ *
+ * For usb_lld_tx_enable_buf, the extent of the buffer is 
+ * more than its call, it will be live until transfer
+ * finished.
+ * In this particular application, there is no problem.
+ */
+static void
+usb_lld_write (uint8_t ep_num, const void *buf, size_t len)
+{
+  usb_lld_tx_enable_buf (ep_num, buf, len);
+}
+#endif
+
 static void usb_start_transmit (const uint8_t *p, size_t n)
 {
   size_t pkt_len = n > ENDP_MAX_SIZE ? ENDP_MAX_SIZE : n;
@@ -75,7 +91,7 @@ static void usb_start_transmit (const uint8_t *p, size_t n)
   ep6_in.txsize = n;
   ep6_in.txcnt = 0;
 
-  usb_lld_write (ENDP6, (uint8_t *)ep6_in.txbuf, pkt_len);
+  usb_lld_write (ENDP6, ep6_in.txbuf, pkt_len);
 }
 
 /* "Data Transmitted" callback */
@@ -94,7 +110,7 @@ EP6_IN_Callback (uint16_t len)
 	len = ENDP_MAX_SIZE;
       else
 	len = ep6_in.txsize;
-      usb_lld_write (ENDP6, (uint8_t *)ep6_in.txbuf, len);
+      usb_lld_write (ENDP6, ep6_in.txbuf, len);
     }
   else
     /* Transmit has been completed, notify the waiting thread */
@@ -113,12 +129,26 @@ EP6_IN_Callback (uint16_t len)
 }
 
 
+#ifdef GNU_LINUX_EMULATION
+static size_t usb_buf_size (size_t n)
+{
+  if (n >= ENDP_MAX_SIZE)
+    return (size_t)ENDP_MAX_SIZE;
+  else
+    return n;
+}
+#endif
+
 static void usb_start_receive (uint8_t *p, size_t n)
 {
   ep6_out.rxbuf = p;
   ep6_out.rxsize = n;
   ep6_out.rxcnt = 0;
+#ifdef GNU_LINUX_EMULATION
+  usb_lld_rx_enable_buf (ENDP6, ep6_out.rxbuf, usb_buf_size (ep6_out.rxsize));
+#else
   usb_lld_rx_enable (ENDP6);
+#endif
 }
 
 /* "Data Received" call back */
@@ -136,14 +166,19 @@ EP6_OUT_Callback (uint16_t len)
       n = ep6_out.rxsize;
     }
 
+#ifndef GNU_LINUX_EMULATION
   usb_lld_rxcpy (ep6_out.rxbuf, ENDP6, 0, n);
+#endif
   ep6_out.rxbuf += n;
   ep6_out.rxcnt += n;
   ep6_out.rxsize -= n;
 
-  if (n == ENDP_MAX_SIZE && ep6_out.rxsize != 0)
-    /* More data to be received */
+  if (n == ENDP_MAX_SIZE && ep6_out.rxsize != 0) /* More data to be received */
+#ifdef GNU_LINUX_EMULATION
+    usb_lld_rx_enable_buf (ENDP6, ep6_out.rxbuf, usb_buf_size (ep6_out.rxsize));
+#else
     usb_lld_rx_enable (ENDP6);
+#endif
   else
     /* Receiving has been completed, notify the waiting thread */
     switch (msc_state)
@@ -340,11 +375,9 @@ msc_handle_command (void)
     goto done;
   case SCSI_REQUEST_SENSE:
     if (CBW.CBWCB[1] & 0x01) /* DESC */
-      msc_send_result ((uint8_t *)&scsi_sense_data_desc,
-		       sizeof scsi_sense_data_desc);
+      msc_send_result (scsi_sense_data_desc, sizeof scsi_sense_data_desc);
     else
-      msc_send_result ((uint8_t *)&scsi_sense_data_fixed,
-		       sizeof scsi_sense_data_fixed);
+      msc_send_result (scsi_sense_data_fixed, sizeof scsi_sense_data_fixed);
     /* After the error is reported, clear it, if it's .  */
     if (!keep_contingent_allegiance)
       {
@@ -358,16 +391,13 @@ msc_handle_command (void)
       {
 	if (CBW.CBWCB[2] == 0x83)
 	  /* Handle the case Page Code 0x83 */
-	  msc_send_result ((uint8_t *)&scsi_inquiry_data_83,
-			   sizeof scsi_inquiry_data_83);
+	  msc_send_result (scsi_inquiry_data_83, sizeof scsi_inquiry_data_83);
 	else
 	  /* Otherwise, assume page 00 */
-	  msc_send_result ((uint8_t *)&scsi_inquiry_data_00,
-			   sizeof scsi_inquiry_data_00);
+	  msc_send_result (scsi_inquiry_data_00, sizeof scsi_inquiry_data_00);
       }
     else
-      msc_send_result ((uint8_t *)&scsi_inquiry_data,
-		       sizeof scsi_inquiry_data);
+      msc_send_result (scsi_inquiry_data, sizeof scsi_inquiry_data);
     goto done;
   case SCSI_READ_FORMAT_CAPACITIES:
     buf[8]  = scsi_read_format_capacities (&nblocks, &secsize);
@@ -411,6 +441,7 @@ msc_handle_command (void)
     msc_send_result (NULL, 0);
     goto done;
   case SCSI_MODE_SENSE6:
+  case SCSI_ATA_16:
     buf[0] = 0x03;
     buf[1] = buf[2] = buf[3] = 0;
     msc_send_result (buf, 4);
@@ -442,7 +473,6 @@ msc_handle_command (void)
       {
 	msc_state = MSC_ERROR;
 	usb_lld_stall_tx (ENDP6);
-	usb_lld_stall_rx (ENDP6);
 	goto done;
       }
   }

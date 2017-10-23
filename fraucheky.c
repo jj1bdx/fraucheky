@@ -1,7 +1,8 @@
 /*
  * flaucheky.c -- the USB Mass Storage Class device
  *
- * Copyright (C) 2013, 2015, 2016  Free Software Initiative of Japan
+ * Copyright (C) 2013, 2015, 2016, 2017
+ *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Fraucheky, making sure to have GNU GPL on a
@@ -123,13 +124,18 @@ static const struct desc string_descriptors[] = {
 };
 
 void
-fraucheky_setup_endpoints_for_interface (int stop)
+fraucheky_setup_endpoints_for_interface (struct usb_dev *dev, int stop)
 {
   extern void fraucheky_reset (void);
 
   if (!stop)
     {
+#ifdef GNU_LINUX_EMULATION
+      usb_lld_setup_endp (dev, ENDP6, 1, 1);
+#else
+      (void)dev;
       usb_lld_setup_endpoint (ENDP6, EP_BULK, 0, ENDP6_RXADDR, ENDP6_TXADDR, 64);
+#endif
       fraucheky_reset ();
     }
   else
